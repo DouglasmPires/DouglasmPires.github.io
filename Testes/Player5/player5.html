@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+        }
+
+        .player {
+            position: relative;
+            width: 375px; /* 25% maior */
+            height: 375px; /* 25% maior */
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px;
+            border: none;
+            background: #007BFF;
+            color: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        input[type="range"] {
+            margin-top: 10px;
+            width: 150px;
+        }
+
+        #spectrum {
+            position: absolute;
+            top: 20px;
+            width: 90%;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+        }
+
+        .bar {
+            width: 5px;
+            height: 10px;
+            margin: 0 2px;
+            background: #007BFF;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { height: 10px; }
+            50% { height: 50px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="player">
+        <input type="file" id="file-input" webkitdirectory directory multiple accept=".mp3" style="display:none;">
+        <div id="spectrum"></div>
+        <div class="controls">
+            <div class="buttons">
+                <button id="prev-btn">⏮</button>
+                <button id="play-btn">▶️</button>
+                <button id="stop-btn">⏹</button>
+                <button id="next-btn">⏭</button>
+                <button id="select-btn">📂</button>
+            </div>
+            <input type="range" id="volume-control" min="0" max="1" step="0.01">
+        </div>
+        <div id="current-track">No track selected</div>
+    </div>
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const playBtn = document.getElementById('play-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const selectBtn = document.getElementById('select-btn');
+        const volumeControl = document.getElementById('volume-control');
+        const currentTrack = document.getElementById('current-track');
+        const spectrum = document.getElementById('spectrum');
+
+        let audio = new Audio();
+        let tracks = [];
+        let currentIndex = 0;
+
+        // Function to create spectrum bars
+        function createSpectrum() {
+            spectrum.innerHTML = '';
+            for (let i = 0; i < 50; i++) {
+                const bar = document.createElement('div');
+                bar.classList.add('bar');
+                bar.style.animationDelay = `${i * 0.05}s`;
+                spectrum.appendChild(bar);
+            }
+        }
+
+        createSpectrum();
+
+        // Open file dialog on click of the select button
+        selectBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (event) => {
+            tracks = Array.from(event.target.files).filter(file => file.type === 'audio/mpeg');
+            if (tracks.length > 0) {
+                loadTrack(0);
+                audio.play(); // Play the first track automatically
+                playBtn.textContent = '⏸';
+                spectrum.style.visibility = 'visible'; // Show spectrum
+            } else {
+                currentTrack.textContent = 'No valid MP3 files selected';
+            }
+        });
+
+        playBtn.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play();
+                playBtn.textContent = '⏸';
+                spectrum.style.visibility = 'visible'; // Show spectrum
+            } else {
+                audio.pause();
+                playBtn.textContent = '▶️';
+                spectrum.style.visibility = 'hidden'; // Hide spectrum
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            audio.pause();
+            audio.currentTime = 0;
+            playBtn.textContent = '▶️';
+            spectrum.style.visibility = 'hidden'; // Hide spectrum
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentIndex > 0) {
+                loadTrack(currentIndex - 1);
+                audio.play();
+                playBtn.textContent = '⏸';
+                spectrum.style.visibility = 'visible'; // Show spectrum
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentIndex < tracks.length - 1) {
+                loadTrack(currentIndex + 1);
+                audio.play();
+                playBtn.textContent = '⏸';
+                spectrum.style.visibility = 'visible'; // Show spectrum
+            }
+        });
+
+        volumeControl.addEventListener('input', (event) => {
+            audio.volume = event.target.value;
+        });
+
+        audio.addEventListener('ended', () => {
+            if (currentIndex < tracks.length - 1) {
+                loadTrack(currentIndex + 1);
+                audio.play();
+            } else {
+                spectrum.style.visibility = 'hidden'; // Hide spectrum
+            }
+        });
+
+        function loadTrack(index) {
+            currentIndex = index;
+            audio.src = URL.createObjectURL(tracks[index]);
+            currentTrack.textContent = tracks[index].name;
+        }
+    </script>
+</body>
+</html>
